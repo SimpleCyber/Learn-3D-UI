@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced 3D Water Container with Dam</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .ui-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 300px;
+            z-index: 100;
+        }
+        .title {
+            font-size: 24px;
+            margin-bottom: 15px;
+            text-align: center;
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #e0e0e0;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+        }
+        .slider {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(to bottom, #4facfe, #00f2fe);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        .value-display {
+            width: 40px;
+            text-align: center;
+            margin-left: 10px;
+            font-size: 14px;
+            color: #4facfe;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 15px;
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+        .btn:active {
+            transform: translateY(1px);
+        }
+        .info-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 300px;
+            z-index: 100;
+        }
+        .info-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #4facfe;
+        }
+        .info-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #e0e0e0;
+        }
+        .water-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00f2fe;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #b0b0b0;
+        }
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 300px;
+            z-index: 100;
+        }
+        .instructions-title {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #4facfe;
+        }
+        .instructions-list {
+            font-size: 12px;
+            color: #e0e0e0;
+            line-height: 1.5;
+        }
+        .instructions-list li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="canvas-container"></div>
+        
+        <div class="ui-panel">
+            <div class="title">DAM CONTROL PANEL</div>
+            
+            <div class="control-group">
+                <label class="control-label">Water Level</label>
+                <div class="slider-container">
+                    <input type="range" min="1" max="10" value="5" class="slider" id="waterLevel">
+                    <span class="value-display" id="waterLevelValue">5.0</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">Wave Intensity</label>
+                <div class="slider-container">
+                    <input type="range" min="0" max="2" step="0.1" value="0.5" class="slider" id="waveIntensity">
+                    <span class="value-display" id="waveIntensityValue">0.5</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label class="control-label">Flow Rate</label>
+                <div class="slider-container">
+                    <input type="range" min="0" max="1" step="0.1" value="0.3" class="slider" id="flowRate">
+                    <span class="value-display" id="flowRateValue">0.3</span>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn" id="openGate">OPEN GATE</button>
+                <button class="btn" id="closeGate">CLOSE GATE</button>
+                <button class="btn" id="addRipple">ADD RIPPLE</button>
+                <button class="btn" id="toggleView">TOGGLE VIEW</button>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-title">DAM STATUS</div>
+            <div class="water-stats">
+                <div class="stat">
+                    <div class="stat-value" id="waterVolume">1250</div>
+                    <div class="stat-label">WATER VOLUME (m³)</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="flowSpeed">2.5</div>
+                    <div class="stat-label">FLOW SPEED (m/s)</div>
+                </div>
+            </div>
+            <div class="info-text">
+                Gate Status: <span id="gateStatus">CLOSED</span><br>
+                Reservoir Level: <span id="reservoirLevel">MEDIUM</span>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <div class="instructions-title">CONTROLS</div>
+            <ul class="instructions-list">
+                <li>Drag to rotate the view</li>
+                <li>Scroll to zoom in/out</li>
+                <li>Use sliders to adjust parameters</li>
+                <li>Click buttons to control the dam</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    
+    <script>
+        // Initialize the scene
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x0a1a3a);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // Add orbit controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 10;
+        controls.maxDistance = 50;
+
+        // Position the camera
+        camera.position.set(20, 15, 20);
+        controls.update();
+
+        // Add lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(30, 40, 20);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 100;
+        directionalLight.shadow.camera.left = -30;
+        directionalLight.shadow.camera.right = 30;
+        directionalLight.shadow.camera.top = 30;
+        directionalLight.shadow.camera.bottom = -30;
+        scene.add(directionalLight);
+
+        // Create the ground
+        const groundGeometry = new THREE.PlaneGeometry(100, 100);
+        const groundMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x2d5a27,
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.1;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Create the dam structure
+        const damGeometry = new THREE.BoxGeometry(15, 12, 3);
+        const damMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x7a7a7a,
+        });
+        const dam = new THREE.Mesh(damGeometry, damMaterial);
+        dam.position.set(0, 6, -8);
+        dam.castShadow = true;
+        dam.receiveShadow = true;
+        scene.add(dam);
+
+        // Create the reservoir walls
+        const wallGeometry = new THREE.BoxGeometry(2, 12, 15);
+        const wallMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x8B4513,
+        });
+        
+        const leftWall = new THREE.Mesh(wallGeometry, wallMaterial);
+        leftWall.position.set(-10, 6, 0);
+        leftWall.castShadow = true;
+        leftWall.receiveShadow = true;
+        scene.add(leftWall);
+        
+        const rightWall = new THREE.Mesh(wallGeometry, wallMaterial);
+        rightWall.position.set(10, 6, 0);
+        rightWall.castShadow = true;
+        rightWall.receiveShadow = true;
+        scene.add(rightWall);
+
+        // Create the back wall
+        const backWallGeometry = new THREE.BoxGeometry(18, 12, 2);
+        const backWall = new THREE.Mesh(backWallGeometry, wallMaterial);
+        backWall.position.set(0, 6, 8);
+        backWall.castShadow = true;
+        backWall.receiveShadow = true;
+        scene.add(backWall);
+
+        // Create the dam gate
+        const gateGeometry = new THREE.BoxGeometry(8, 6, 0.5);
+        const gateMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x4a4a4a,
+        });
+        const gate = new THREE.Mesh(gateGeometry, gateMaterial);
+        gate.position.set(0, 3, -8);
+        gate.castShadow = true;
+        gate.receiveShadow = true;
+        scene.add(gate);
+
+        // Create water surface for reservoir
+        const waterGeometry = new THREE.PlaneGeometry(18, 15, 50, 50);
+        const waterMaterial = new THREE.MeshPhongMaterial({
+            color: 0x0077be,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide,
+            wireframe: false
+        });
+        const water = new THREE.Mesh(waterGeometry, waterMaterial);
+        water.rotation.x = -Math.PI / 2;
+        water.position.y = 5; // Initial water level
+        water.receiveShadow = true;
+        scene.add(water);
+
+        // Create river after the dam
+        const riverGeometry = new THREE.PlaneGeometry(40, 8, 50, 50);
+        const riverMaterial = new THREE.MeshPhongMaterial({
+            color: 0x0077be,
+            transparent: true,
+            opacity: 0.8,
+            side: THREE.DoubleSide,
+            wireframe: false
+        });
+        const river = new THREE.Mesh(riverGeometry, riverMaterial);
+        river.rotation.x = -Math.PI / 2;
+        river.position.set(20, 0.1, -8);
+        river.receiveShadow = true;
+        scene.add(river);
+
+        // Store original vertex positions for water animation
+        const originalWaterVertices = [];
+        for (let i = 0; i < waterGeometry.attributes.position.count; i++) {
+            originalWaterVertices.push(waterGeometry.attributes.position.getY(i));
+        }
+
+        const originalRiverVertices = [];
+        for (let i = 0; i < riverGeometry.attributes.position.count; i++) {
+            originalRiverVertices.push(riverGeometry.attributes.position.getY(i));
+        }
+
+        // Animation variables
+        let time = 0;
+        let isWireframe = false;
+        let gateOpen = false;
+        let waterFlowActive = false;
+        let currentWaterLevel = 5;
+        let waveIntensity = 0.5;
+        let flowRate = 0.3;
+
+        // Animation functions
+        function animateWater() {
+            time += 0.02;
+            
+            const waterPositions = waterGeometry.attributes.position;
+            const riverPositions = riverGeometry.attributes.position;
+            
+            // Animate reservoir water
+            for (let i = 0; i < waterPositions.count; i++) {
+                const x = waterPositions.getX(i);
+                const z = waterPositions.getZ(i);
+                
+                // Create wave pattern
+                const wave1 = Math.sin(x * 0.5 + time) * 0.1 * waveIntensity;
+                const wave2 = Math.cos(z * 0.3 + time * 1.3) * 0.08 * waveIntensity;
+                const wave3 = Math.sin(Math.sqrt(x*x + z*z) * 0.7 + time * 1.7) * 0.05 * waveIntensity;
+                
+                // Combine waves and add to original position
+                waterPositions.setY(i, originalWaterVertices[i] + wave1 + wave2 + wave3);
+            }
+            
+            waterPositions.needsUpdate = true;
+            waterGeometry.computeVertexNormals();
+            
+            // Animate river water with flow effect
+            for (let i = 0; i < riverPositions.count; i++) {
+                const x = riverPositions.getX(i);
+                const z = riverPositions.getZ(i);
+                
+                // Create flow pattern (stronger when gate is open)
+                const flowIntensity = gateOpen ? flowRate : 0.1;
+                const flow1 = Math.sin(x * 0.8 - time * 2) * flowIntensity;
+                const flow2 = Math.cos(z * 0.5 - time * 1.5) * (flowIntensity * 0.7);
+                
+                riverPositions.setY(i, originalRiverVertices[i] + flow1 + flow2);
+            }
+            
+            riverPositions.needsUpdate = true;
+            riverGeometry.computeVertexNormals();
+        }
+
+        // Function to open the dam gate
+        function openGate() {
+            if (!gateOpen) {
+                gate.position.y = 0.5;
+                gateOpen = true;
+                waterFlowActive = true;
+                document.getElementById('gateStatus').textContent = 'OPEN';
+                document.getElementById('flowSpeed').textContent = (flowRate * 8.3).toFixed(1);
+            }
+        }
+
+        // Function to close the dam gate
+        function closeGate() {
+            if (gateOpen) {
+                gate.position.y = 3;
+                gateOpen = false;
+                waterFlowActive = false;
+                document.getElementById('gateStatus').textContent = 'CLOSED';
+                document.getElementById('flowSpeed').textContent = '0.0';
+            }
+        }
+
+        // Function to change water level
+        function changeWaterLevel() {
+            currentWaterLevel = parseFloat(document.getElementById('waterLevel').value);
+            water.position.y = currentWaterLevel;
+            document.getElementById('waterLevelValue').textContent = currentWaterLevel.toFixed(1);
+            
+            // Update water volume
+            const volume = Math.round(currentWaterLevel * 250);
+            document.getElementById('waterVolume').textContent = volume;
+            
+            // Update reservoir level
+            let level = 'LOW';
+            if (currentWaterLevel > 7) level = 'HIGH';
+            else if (currentWaterLevel > 4) level = 'MEDIUM';
+            document.getElementById('reservoirLevel').textContent = level;
+        }
+
+        // Function to change wave intensity
+        function changeWaveIntensity() {
+            waveIntensity = parseFloat(document.getElementById('waveIntensity').value);
+            document.getElementById('waveIntensityValue').textContent = waveIntensity.toFixed(1);
+        }
+
+        // Function to change flow rate
+        function changeFlowRate() {
+            flowRate = parseFloat(document.getElementById('flowRate').value);
+            document.getElementById('flowRateValue').textContent = flowRate.toFixed(1);
+            
+            if (gateOpen) {
+                document.getElementById('flowSpeed').textContent = (flowRate * 8.3).toFixed(1);
+            }
+        }
+
+        // Function to add ripple to the water
+        function addRipple() {
+            const waterPositions = waterGeometry.attributes.position;
+            const centerX = 0;
+            const centerZ = 0;
+            const disturbanceRadius = 4;
+            const disturbanceStrength = 0.8;
+            
+            for (let i = 0; i < waterPositions.count; i++) {
+                const x = waterPositions.getX(i);
+                const z = waterPositions.getZ(i);
+                
+                const distance = Math.sqrt((x - centerX) * (x - centerX) + (z - centerZ) * (z - centerZ));
+                
+                if (distance < disturbanceRadius) {
+                    const wave = Math.cos(distance * 3) * disturbanceStrength * (1 - distance / disturbanceRadius);
+                    waterPositions.setY(i, originalWaterVertices[i] + wave);
+                }
+            }
+            
+            waterPositions.needsUpdate = true;
+            waterGeometry.computeVertexNormals();
+        }
+
+        // Function to toggle wireframe view
+        function toggleView() {
+            isWireframe = !isWireframe;
+            waterMaterial.wireframe = isWireframe;
+            riverMaterial.wireframe = isWireframe;
+        }
+
+        // Add event listeners for controls
+        document.getElementById('openGate').addEventListener('click', openGate);
+        document.getElementById('closeGate').addEventListener('click', closeGate);
+        document.getElementById('waterLevel').addEventListener('input', changeWaterLevel);
+        document.getElementById('waveIntensity').addEventListener('input', changeWaveIntensity);
+        document.getElementById('flowRate').addEventListener('input', changeFlowRate);
+        document.getElementById('addRipple').addEventListener('click', addRipple);
+        document.getElementById('toggleView').addEventListener('click', toggleView);
+
+        // Initialize UI values
+        changeWaterLevel();
+        changeWaveIntensity();
+        changeFlowRate();
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            animateWater();
+            controls.update();
+            
+            renderer.render(scene, camera);
+        }
+
+        // Start the animation
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservoir Water Level Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #87CEEB, #1E90FF);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(to right, #2c3e50, #3498db);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .reservoir-container {
+            grid-column: 1 / -1;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .reservoir {
+            position: relative;
+            height: 300px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 3px solid #495057;
+            margin-top: 10px;
+        }
+        
+        .water {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            background: linear-gradient(to top, #1E90FF, #00BFFF);
+            transition: height 0.5s ease;
+        }
+        
+        .water-level {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .dam {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 30px;
+            height: 100%;
+            background: linear-gradient(to right, #7f8c8d, #95a5a6);
+            border-left: 2px solid #2c3e50;
+        }
+        
+        .controls {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stats {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .value-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        button {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 5px;
+        }
+        
+        button:hover {
+            background: linear-gradient(to right, #2980b9, #1c6ea4);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .alert {
+            background-color: #e74c3c;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Reservoir Water Level Simulation</h1>
+            <p class="subtitle">Monitor and control the water level in the reservoir</p>
+        </header>
+        
+        <div class="dashboard">
+            <div class="reservoir-container">
+                <h2>Reservoir</h2>
+                <div class="reservoir">
+                    <div class="water" id="water"></div>
+                    <div class="water-level" id="waterLevel">60%</div>
+                    <div class="dam"></div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <h2>Controls</h2>
+                <div class="control-group">
+                    <label for="rainfall">Rainfall Intensity</label>
+                    <input type="range" id="rainfall" min="0" max="100" value="30">
+                    <div class="value-display">
+                        <span>Low</span>
+                        <span id="rainfallValue">30%</span>
+                        <span>High</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="outflow">Outflow Rate</label>
+                    <input type="range" id="outflow" min="0" max="100" value="40">
+                    <div class="value-display">
+                        <span>Low</span>
+                        <span id="outflowValue">40%</span>
+                        <span>High</span>
+                    </div>
+                </div>
+                
+                <button id="emergencyRelease">Emergency Release</button>
+                <div class="alert" id="alert">Warning: Water level critical!</div>
+            </div>
+            
+            <div class="stats">
+                <h2>Statistics</h2>
+                <div class="stat-item">
+                    <span>Current Water Level:</span>
+                    <span class="stat-value" id="currentLevel">60%</span>
+                </div>
+                <div class="stat-item">
+                    <span>Capacity:</span>
+                    <span class="stat-value">5,000,000 m³</span>
+                </div>
+                <div class="stat-item">
+                    <span>Inflow Rate:</span>
+                    <span class="stat-value" id="inflowRate">1,200 m³/s</span>
+                </div>
+                <div class="stat-item">
+                    <span>Outflow Rate:</span>
+                    <span class="stat-value" id="outflowRate">800 m³/s</span>
+                </div>
+                <div class="stat-item">
+                    <span>Status:</span>
+                    <span class="stat-value" id="status">Normal</span>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Reservoir Simulation &copy; 2023 | For demonstration purposes only</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const waterElement = document.getElementById('water');
+        const waterLevelElement = document.getElementById('waterLevel');
+        const currentLevelElement = document.getElementById('currentLevel');
+        const inflowRateElement = document.getElementById('inflowRate');
+        const outflowRateElement = document.getElementById('outflowRate');
+        const statusElement = document.getElementById('status');
+        const alertElement = document.getElementById('alert');
+        
+        const rainfallSlider = document.getElementById('rainfall');
+        const outflowSlider = document.getElementById('outflow');
+        const rainfallValueElement = document.getElementById('rainfallValue');
+        const outflowValueElement = document.getElementById('outflowValue');
+        const emergencyButton = document.getElementById('emergencyRelease');
+        
+        // Reservoir state
+        let waterLevel = 60; // percentage
+        let inflowRate = 1200; // m³/s
+        let outflowRate = 800; // m³/s
+        let status = "Normal";
+        
+        // Update display based on current state
+        function updateDisplay() {
+            // Update water level visual
+            waterElement.style.height = `${waterLevel}%`;
+            waterLevelElement.textContent = `${waterLevel}%`;
+            currentLevelElement.textContent = `${waterLevel}%`;
+            
+            // Update inflow/outflow rates based on sliders
+            inflowRate = Math.round(rainfallSlider.value * 40);
+            outflowRate = Math.round(outflowSlider.value * 20);
+            
+            inflowRateElement.textContent = `${inflowRate.toLocaleString()} m³/s`;
+            outflowRateElement.textContent = `${outflowRate.toLocaleString()} m³/s`;
+            
+            // Update status
+            if (waterLevel > 90) {
+                status = "Critical";
+                statusElement.style.color = "#e74c3c";
+                alertElement.style.display = "block";
+            } else if (waterLevel > 75) {
+                status = "High";
+                statusElement.style.color = "#e67e22";
+                alertElement.style.display = "none";
+            } else if (waterLevel > 25) {
+                status = "Normal";
+                statusElement.style.color = "#27ae60";
+                alertElement.style.display = "none";
+            } else {
+                status = "Low";
+                statusElement.style.color = "#3498db";
+                alertElement.style.display = "none";
+            }
+            
+            statusElement.textContent = status;
+        }
+        
+        // Simulate water flow
+        function simulateFlow() {
+            // Calculate net flow (inflow - outflow)
+            const netFlow = inflowRate - outflowRate;
+            
+            // Adjust water level based on net flow
+            // Simplified calculation for demonstration
+            waterLevel += netFlow / 1000;
+            
+            // Keep water level within bounds
+            waterLevel = Math.max(0, Math.min(100, waterLevel));
+            
+            updateDisplay();
+        }
+        
+        // Event listeners for sliders
+        rainfallSlider.addEventListener('input', function() {
+            rainfallValueElement.textContent = `${this.value}%`;
+            updateDisplay();
+        });
+        
+        outflowSlider.addEventListener('input', function() {
+            outflowValueElement.textContent = `${this.value}%`;
+            updateDisplay();
+        });
+        
+        // Emergency release button
+        emergencyButton.addEventListener('click', function() {
+            // Temporarily increase outflow
+            const originalOutflow = outflowSlider.value;
+            outflowSlider.value = 100;
+            outflowValueElement.textContent = "100%";
+            updateDisplay();
+            
+            // Reset after 3 seconds
+            setTimeout(() => {
+                outflowSlider.value = originalOutflow;
+                outflowValueElement.textContent = `${originalOutflow}%`;
+                updateDisplay();
+            }, 3000);
+        });
+        
+        // Initialize display
+        updateDisplay();
+        
+        // Run simulation every second
+        setInterval(simulateFlow, 1000);
+    </script>
+</body>
+</html>

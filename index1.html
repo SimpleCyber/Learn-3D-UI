@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HydroSense Dam Monitoring</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Exo+2:wght@300;400;500;600&display=swap');
+        
+        :root {
+            --primary: #0a2463;
+            --secondary: #3e92cc;
+            --accent: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --dark: #1a1a2e;
+            --darker: #0f0f1a;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
+            font-family: 'Exo 2', sans-serif;
+            color: #e0e0e0;
+        }
+        
+        .glitch-text {
+            font-family: 'Orbitron', monospace;
+            text-transform: uppercase;
+            position: relative;
+            color: #00f3ff;
+            text-shadow: 0 0 10px #00f3ff, 0 0 20px #00f3ff, 0 0 30px #00f3ff;
+            letter-spacing: 3px;
+        }
+        
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -2px 0 #ff00ff;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+        
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -2px 0 #00ffff;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+        
+        @keyframes glitch-anim {
+            0% { clip: rect(42px, 9999px, 44px, 0); }
+            5% { clip: rect(12px, 9999px, 59px, 0); }
+            10% { clip: rect(48px, 9999px, 29px, 0); }
+            15% { clip: rect(42px, 9999px, 73px, 0); }
+            20% { clip: rect(63px, 9999px, 27px, 0); }
+            25% { clip: rect(34px, 9999px, 55px, 0); }
+            30% { clip: rect(86px, 9999px, 73px, 0); }
+            35% { clip: rect(20px, 9999px, 20px, 0); }
+            40% { clip: rect(26px, 9999px, 60px, 0); }
+            45% { clip: rect(25px, 9999px, 66px, 0); }
+            50% { clip: rect(57px, 9999px, 98px, 0); }
+            55% { clip: rect(5px, 9999px, 46px, 0); }
+            60% { clip: rect(82px, 9999px, 31px, 0); }
+            65% { clip: rect(54px, 9999px, 27px, 0); }
+            70% { clip: rect(28px, 9999px, 99px, 0); }
+            75% { clip: rect(45px, 9999px, 69px, 0); }
+            80% { clip: rect(23px, 9999px, 85px, 0); }
+            85% { clip: rect(54px, 9999px, 84px, 0); }
+            90% { clip: rect(45px, 9999px, 47px, 0); }
+            95% { clip: rect(37px, 9999px, 20px, 0); }
+            100% { clip: rect(4px, 9999px, 91px, 0); }
+        }
+        
+        @keyframes glitch-anim2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); }
+            5% { clip: rect(52px, 9999px, 74px, 0); }
+            10% { clip: rect(79px, 9999px, 85px, 0); }
+            15% { clip: rect(75px, 9999px, 5px, 0); }
+            20% { clip: rect(67px, 9999px, 61px, 0); }
+            25% { clip: rect(14px, 9999px, 79px, 0); }
+            30% { clip: rect(1px, 9999px, 66px, 0); }
+            35% { clip: rect(86px, 9999px, 30px, 0); }
+            40% { clip: rect(23px, 9999px, 98px, 0); }
+            45% { clip: rect(85px, 9999px, 72px, 0); }
+            50% { clip: rect(71px, 9999px, 75px, 0); }
+            55% { clip: rect(2px, 9999px, 48px, 0); }
+            60% { clip: rect(30px, 9999px, 16px, 0); }
+            65% { clip: rect(59px, 9999px, 50px, 0); }
+            70% { clip: rect(41px, 9999px, 62px, 0); }
+            75% { clip: rect(2px, 9999px, 82px, 0); }
+            80% { clip: rect(47px, 9999px, 73px, 0); }
+            85% { clip: rect(3px, 9999px, 27px, 0); }
+            90% { clip: rect(26px, 9999px, 55px, 0); }
+            95% { clip: rect(42px, 9999px, 97px, 0); }
+            100% { clip: rect(38px, 9999px, 49px, 0); }
+        }
+        
+        .scene {
+            perspective: 1200px;
+            height: 60vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        .dam-container {
+            width: 700px;
+            height: 450px;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(65deg) rotateZ(-15deg);
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        .dam {
+            position: absolute;
+            width: 500px;
+            height: 250px;
+            background: linear-gradient(to right, #5d4037, #8d6e63, #5d4037);
+            border-radius: 15px 15px 0 0;
+            bottom: 0;
+            left: 100px;
+            transform-style: preserve-3d;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.7),
+                inset 0 -5px 15px rgba(0,0,0,0.5);
+        }
+        
+        .dam-front {
+            position: absolute;
+            width: 500px;
+            height: 250px;
+            background: linear-gradient(to right, #5d4037, #8d6e63, #5d4037);
+            border-radius: 15px 15px 0 0;
+            transform: translateZ(25px);
+            box-shadow: inset 0 5px 15px rgba(255,255,255,0.1);
+        }
+        
+        .dam-top {
+            position: absolute;
+            width: 500px;
+            height: 50px;
+            background: #4e342e;
+            transform: rotateX(90deg) translateZ(25px);
+            top: -25px;
+            box-shadow: 0 -5px 10px rgba(0,0,0,0.5);
+        }
+        
+        .dam-side {
+            position: absolute;
+            width: 50px;
+            height: 250px;
+            background: #4e342e;
+            right: -50px;
+            transform: rotateY(90deg) translateZ(500px);
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+        }
+        
+        .water {
+            position: absolute;
+            width: 480px;
+            height: 180px;
+            background: linear-gradient(to bottom, #1e88e5, #64b5f6, #90caf9);
+            bottom: 0;
+            left: 110px;
+            border-radius: 0 0 15px 15px;
+            overflow: hidden;
+            opacity: 0.85;
+            transform: translateZ(15px);
+            box-shadow: 
+                inset 0 10px 20px rgba(255,255,255,0.3),
+                0 0 30px rgba(33, 150, 243, 0.5);
+        }
+        
+        .water-surface {
+            position: absolute;
+            width: 100%;
+            height: 25px;
+            background: rgba(33, 150, 243, 0.7);
+            top: 0;
+            animation: waterFlow 4s linear infinite;
+        }
+        
+        .water-wave {
+            position: absolute;
+            width: 100%;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            animation: wave 5s linear infinite;
+        }
+        
+        .water-wave:nth-child(2) {
+            animation-delay: 1.5s;
+            top: 40px;
+        }
+        
+        .water-wave:nth-child(3) {
+            animation-delay: 3s;
+            top: 80px;
+        }
+        
+        .spillway {
+            position: absolute;
+            width: 120px;
+            height: 25px;
+            background: #4e342e;
+            bottom: 180px;
+            left: 290px;
+            transform: translateZ(30px);
+            border-radius: 8px 8px 0 0;
+            box-shadow: 0 -5px 10px rgba(0,0,0,0.3);
+        }
+        
+        .waterfall {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(to bottom, rgba(33, 150, 243, 0.9), rgba(33, 150, 243, 0.5));
+            bottom: -120px;
+            left: 290px;
+            transform: translateZ(30px);
+            border-radius: 0 0 15px 15px;
+            animation: waterfall 2.5s linear infinite;
+            box-shadow: 0 0 20px rgba(33, 150, 243, 0.7);
+        }
+        
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 40px;
+        }
+        
+        .sensor-card {
+            background: rgba(30, 30, 46, 0.7);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(62, 146, 204, 0.3);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .sensor-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, var(--secondary), var(--accent));
+        }
+        
+        .sensor-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+            border-color: rgba(62, 146, 204, 0.6);
+        }
+        
+        .sensor-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            color: #00f3ff;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.7);
+            margin: 10px 0;
+        }
+        
+        .sensor-status {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+            box-shadow: 0 0 10px currentColor;
+        }
+        
+        .status-normal {
+            background-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .status-warning {
+            background-color: var(--warning);
+            color: var(--warning);
+            animation: pulse 2s infinite;
+        }
+        
+        .status-danger {
+            background-color: var(--danger);
+            color: var(--danger);
+            animation: pulse 1s infinite;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 1s ease;
+        }
+        
+        .grid-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, transparent 95%, rgba(0, 243, 255, 0.05) 95%),
+                linear-gradient(0deg, transparent 95%, rgba(0, 243, 255, 0.05) 95%);
+            background-size: 20px 20px;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .tech-panel {
+            background: rgba(20, 20, 35, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 40px;
+            border: 1px solid rgba(62, 146, 204, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tech-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, var(--secondary), var(--accent));
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: rotateX(65deg) rotateZ(-15deg) translateY(0); }
+            50% { transform: rotateX(65deg) rotateZ(-15deg) translateY(-15px); }
+        }
+        
+        @keyframes waterFlow {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        @keyframes wave {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        @keyframes waterfall {
+            0% { background: linear-gradient(to bottom, rgba(33, 150, 243, 0.9), rgba(33, 150, 243, 0.5)); }
+            50% { background: linear-gradient(to bottom, rgba(33, 150, 243, 0.95), rgba(33, 150, 243, 0.6)); }
+            100% { background: linear-gradient(to bottom, rgba(33, 150, 243, 0.9), rgba(33, 150, 243, 0.5)); }
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .dashboard-item {
+            background: rgba(30, 30, 46, 0.6);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid rgba(62, 146, 204, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .dashboard-item:hover {
+            background: rgba(40, 40, 66, 0.8);
+            border-color: rgba(62, 146, 204, 0.5);
+            transform: translateY(-5px);
+        }
+        
+        .data-stream {
+            font-family: 'Orbitron', monospace;
+            color: #00f3ff;
+            font-size: 1.1rem;
+            margin-top: 5px;
+        }
+        
+        .header-section {
+            text-align: center;
+            padding: 20px 0;
+            background: rgba(20, 20, 35, 0.7);
+            border-bottom: 1px solid rgba(62, 146, 204, 0.3);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, var(--secondary), var(--accent), var(--secondary));
+        }
+        
+        .cyber-border {
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            position: relative;
+        }
+        
+        .cyber-border::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border: 1px solid rgba(0, 243, 255, 0.5);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-section">
+        <h1 class="glitch-text text-4xl md:text-5xl font-black mb-2" data-text="HYDROSENSE MONITOR">HYDROSENSE MONITOR</h1>
+        <p class="text-xl text-cyan-300 font-light">DAM STRUCTURE INTEGRITY & HYDROLOGICAL DATA</p>
+    </div>
+    
+    <div class="container mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+                <div class="tech-panel">
+                    <h2 class="text-2xl font-bold mb-6 text-cyan-300 flex items-center">
+                        <i class="fas fa-water mr-3"></i> 3D DAM STRUCTURE VISUALIZATION
+                    </h2>
+                    
+                    <div class="scene">
+                        <div class="dam-container">
+                            <div class="dam">
+                                <div class="dam-front"></div>
+                                <div class="dam-top"></div>
+                                <div class="dam-side"></div>
+                                <div class="spillway"></div>
+                            </div>
+                            <div class="water">
+                                <div class="water-surface"></div>
+                                <div class="water-wave"></div>
+                                <div class="water-wave"></div>
+                                <div class="water-wave"></div>
+                            </div>
+                            <div class="waterfall"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-grid">
+                        <div class="dashboard-item cyber-border">
+                            <div class="text-gray-400 text-sm">INFLOW RATE</div>
+                            <div class="data-stream">245 M³/S</div>
+                        </div>
+                        <div class="dashboard-item cyber-border">
+                            <div class="text-gray-400 text-sm">OUTFLOW RATE</div>
+                            <div class="data-stream">238 M³/S</div>
+                        </div>
+                        <div class="dashboard-item cyber-border">
+                            <div class="text-gray-400 text-sm">RESERVOIR LEVEL</div>
+                            <div class="data-stream">78.3%</div>
+                        </div>
+                        <div class="dashboard-item cyber-border">
+                            <div class="text-gray-400 text-sm">STRUCTURAL STRESS</div>
+                            <div class="data-stream">12.4%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="lg:col-span-1">
+                <div class="tech-panel h-full">
+                    <h2 class="text-2xl font-bold mb-6 text-cyan-300 flex items-center">
+                        <i class="fas fa-microchip mr-3"></i> SENSOR ARRAY STATUS
+                    </h2>
+                    
+                    <div class="sensor-grid">
+                        <div class="sensor-card">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-xl font-semibold text-white">PH SENSOR</h3>
+                                <span class="sensor-status status-normal"></span>
+                            </div>
+                            <p class="text-gray-400 mb-3">Acidity/Alkalinity Measurement</p>
+                            <div class="sensor-value" id="ph-value">7.24</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-green-500" style="width: 65%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="sensor-card">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-xl font-semibold text-white">TURBIDITY SENSOR</h3>
+                                <span class="sensor-status status-warning"></span>
+                            </div>
+                            <p class="text-gray-400 mb-3">Water Clarity Index</p>
+                            <div class="sensor-value" id="turbidity-value">12.5 NTU</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-yellow-500" style="width: 45%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="sensor-card">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-xl font-semibold text-white">WATER LEVEL</h3>
+                                <span class="sensor-status status-normal"></span>
+                            </div>
+                            <p class="text-gray-400 mb-3">Reservoir Capacity</p>
+                            <div class="sensor-value" id="level-value">78.3%</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-blue-500" style="width: 78%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="sensor-card">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-xl font-semibold text-white">TDS SENSOR</h3>
+                                <span class="sensor-status status-danger"></span>
+                            </div>
+                            <p class="text-gray-400 mb-3">Total Dissolved Solids</p>
+                            <div class="sensor-value" id="tds-value">420 PPM</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-red-500" style="width: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 text-center">
+                        <button id="refresh-btn" class="bg-cyan-700 hover:bg-cyan-600 text-white font-bold py-3 px-8 rounded-lg transition duration-300 transform hover:scale-105 cyber-border">
+                            <i class="fas fa-sync-alt mr-2"></i> REFRESH SENSOR DATA
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tech-panel mt-8">
+            <h2 class="text-2xl font-bold mb-6 text-cyan-300 flex items-center">
+                <i class="fas fa-wave-square mr-3"></i> HYDROLOGICAL DATA STREAM
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="cyber-border p-5 rounded-lg">
+                    <h3 class="text-lg font-semibold text-white mb-3">WATER QUALITY METRICS</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Conductivity</span>
+                            <span class="text-cyan-300 font-mono">245 µS/cm</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Dissolved Oxygen</span>
+                            <span class="text-cyan-300 font-mono">8.2 mg/L</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Temperature</span>
+                            <span class="text-cyan-300 font-mono">14.7°C</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="cyber-border p-5 rounded-lg">
+                    <h3 class="text-lg font-semibold text-white mb-3">STRUCTURAL INTEGRITY</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Concrete Stress</span>
+                            <span class="text-cyan-300 font-mono">12.4 MPa</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Seepage Rate</span>
+                            <span class="text-cyan-300 font-mono">0.45 L/s</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Foundation Shift</span>
+                            <span class="text-cyan-300 font-mono">2.1 mm</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="cyber-border p-5 rounded-lg">
+                    <h3 class="text-lg font-semibold text-white mb-3">ENVIRONMENTAL DATA</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Air Temperature</span>
+                            <span class="text-cyan-300 font-mono">18.3°C</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Humidity</span>
+                            <span class="text-cyan-300 font-mono">67%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Precipitation</span>
+                            <span class="text-cyan-300 font-mono">4.2 mm</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-10 mb-6 text-cyan-200">
+            <p>HYDROSENSE DAM MONITORING SYSTEM &copy; 2023 | REAL-TIME 3D VISUALIZATION</p>
+        </div>
+    </div>
+
+    <script>
+        // Function to generate random sensor values
+        function generateSensorData() {
+            // pH value between 6.5 and 8.5
+            const phValue = (Math.random() * 2 + 6.5).toFixed(2);
+            
+            // Turbidity between 5 and 20 NTU
+            const turbidityValue = (Math.random() * 15 + 5).toFixed(1);
+            
+            // Water level between 60% and 95%
+            const levelValue = (Math.random() * 35 + 60).toFixed(1);
+            
+            // TDS between 200 and 600 ppm
+            const tdsValue = Math.floor(Math.random() * 400 + 200);
+            
+            return {
+                ph: phValue,
+                turbidity: turbidityValue,
+                level: levelValue,
+                tds: tdsValue
+            };
+        }
+        
+        // Function to update sensor status indicators
+        function updateSensorStatus(sensorData) {
+            // pH status
+            const phStatus = document.querySelector('#ph-value').closest('.sensor-card').querySelector('.sensor-status');
+            if (sensorData.ph >= 6.5 && sensorData.ph <= 7.5) {
+                phStatus.className = 'sensor-status status-normal';
+            } else if (sensorData.ph >= 6.0 && sensorData.ph <= 8.0) {
+                phStatus.className = 'sensor-status status-warning';
+            } else {
+                phStatus.className = 'sensor-status status-danger';
+            }
+            
+            // Turbidity status
+            const turbidityStatus = document.querySelector('#turbidity-value').closest('.sensor-card').querySelector('.sensor-status');
+            if (sensorData.turbidity <= 10) {
+                turbidityStatus.className = 'sensor-status status-normal';
+            } else if (sensorData.turbidity <= 15) {
+                turbidityStatus.className = 'sensor-status status-warning';
+            } else {
+                turbidityStatus.className = 'sensor-status status-danger';
+            }
+            
+            // Water level status
+            const levelStatus = document.querySelector('#level-value').closest('.sensor-card').querySelector('.sensor-status');
+            if (sensorData.level >= 70 && sensorData.level <= 85) {
+                levelStatus.className = 'sensor-status status-normal';
+            } else if (sensorData.level >= 60 && sensorData.level <= 90) {
+                levelStatus.className = 'sensor-status status-warning';
+            } else {
+                levelStatus.className = 'sensor-status status-danger';
+            }
+            
+            // TDS status
+            const tdsStatus = document.querySelector('#tds-value').closest('.sensor-card').querySelector('.sensor-status');
+            if (sensorData.tds <= 300) {
+                tdsStatus.className = 'sensor-status status-normal';
+            } else if (sensorData.tds <= 500) {
+                tdsStatus.className = 'sensor-status status-warning';
+            } else {
+                tdsStatus.className = 'sensor-status status-danger';
+            }
+        }
+        
+        // Function to update progress bars
+        function updateProgressBars(sensorData) {
+            // pH progress (6.0 to 8.0 range)
+            const phProgress = ((sensorData.ph - 6.0) / 2.0) * 100;
+            document.querySelector('#ph-value').closest('.sensor-card').querySelector('.progress-fill').style.width = `${phProgress}%`;
+            
+            // Turbidity progress (0 to 20 range)
+            const turbidityProgress = (sensorData.turbidity / 20) * 100;
+            document.querySelector('#turbidity-value').closest('.sensor-card').querySelector('.progress-fill').style.width = `${turbidityProgress}%`;
+            
+            // Water level progress (already in percentage)
+            document.querySelector('#level-value').closest('.sensor-card').querySelector('.progress-fill').style.width = `${sensorData.level}%`;
+            
+            // TDS progress (0 to 600 range)
+            const tdsProgress = (sensorData.tds / 600) * 100;
+            document.querySelector('#tds-value').closest('.sensor-card').querySelector('.progress-fill').style.width = `${tdsProgress}%`;
+        }
+        
+        // Function to update all sensor values
+        function updateSensorValues() {
+            const sensorData = generateSensorData();
+            
+            // Update displayed values
+            document.getElementById('ph-value').textContent = sensorData.ph;
+            document.getElementById('turbidity-value').textContent = `${sensorData.turbidity} NTU`;
+            document.getElementById('level-value').textContent = `${sensorData.level}%`;
+            document.getElementById('tds-value').textContent = `${sensorData.tds} PPM`;
+            
+            // Update status indicators
+            updateSensorStatus(sensorData);
+            
+            // Update progress bars
+            updateProgressBars(sensorData);
+        }
+        
+        // Initialize with random values
+        updateSensorValues();
+        
+        // Set up auto-refresh every 5 seconds
+        setInterval(updateSensorValues, 5000);
+        
+        // Add click event to refresh button
+        document.getElementById('refresh-btn').addEventListener('click', updateSensorValues);
+    </script>
+</body>
+</html>
